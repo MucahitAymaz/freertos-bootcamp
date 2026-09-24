@@ -12,11 +12,11 @@ STM32 + FreeRTOS üzerinde butona basıldığında orta öncelikli bir görev "b
 
 | Bileşen | Değer |
 |---|---|
-| Kart | STM32F746 geliştirme kartı — _TBD: tam model (32F746G-DISCO / NUCLEO-F746ZG)_ |
+| Kart | 32F746G-DISCO (STM32F746NG, Cortex-M7) |
 | Not | Ödev referansı STM32L476RG'dir; kart temin edilemediği için STM32F746 kullanılmıştır. |
-| MCU saati (SYSCLK) | _TBD_ MHz |
-| UART | _TBD: USARTx_, TX: _TBD_, RX: _TBD_ — ST-LINK sanal COM portu üzerinden |
-| Buton | _TBD: pin_ (EXTI hattı: _TBD_) |
+| MCU saati (SYSCLK) | 216 MHz (HSE 25 MHz) |
+| UART | USART1, TX: PA9, RX: PB7 — ST-LINK sanal COM portu üzerinden |
+| Buton | B1 (mavi), PI11, yükselen kenar (EXTI11, `EXTI15_10_IRQn`) |
 | IDE / derleyici | _TBD: STM32CubeIDE sürümü, GCC sürümü_ |
 | STM32CubeF7 HAL | _TBD: sürüm_ |
 | FreeRTOS | _TBD: sürüm, CMSIS-RTOS arayüzü (v1/v2/doğrudan API)_ |
@@ -58,7 +58,7 @@ Senaryolar karşılaştırılırken bu ayarlar değiştirilmez.
 | UART | 115200 baud · 8N1 | Aynı hat süresi |
 | Mesaj boyu | Her TEL / BTN mesajı 64 bayt (63 bayt ASCII, boşlukla doldurulmuş + LF) | Sabit paket boyu |
 | Kuyruklar | Buton: 8 olay · TX: 16 mesaj · FIFO | Aynı tampon davranışı |
-| TX yöntemi | _TBD: IT / DMA_; tamamlanana kadar görev bloklanır | Polling yükünü ayrı tutmak |
+| TX yöntemi | IT; tamamlanana kadar görev bloklanır | Polling yükünü ayrı tutmak |
 | Görev düzeni | Preemptive · 3 > 2 > 1 | Aynı öncelik ilişkisi |
 | Deney deadline'ı | R = t₄ − t₀ ≤ 20 ms | Geç yanıtları saymak |
 | Deney timeout'u | 1 s | Tamamlanmayan aktarımı sonlandırmak |
@@ -72,7 +72,7 @@ Hat süresi referansı: 64 bayt × 10 bit / 115200 bit/s ≈ **5,56 ms** / mesaj
 
 ## 3. Zaman Damgaları
 
-Beş damga da kart üzerindeki aynı timer'dan alınır: _TBD: timer (ör. TIM2, 32-bit, 1 MHz → 1 µs çözünürlük)_.
+Beş damga da kart üzerindeki aynı timer'dan alınır: TIM2, 32-bit, 1 MHz → 1 µs çözünürlük.
 
 | Nokta | Nerede kaydedilir | Yorum |
 |---|---|---|
@@ -146,9 +146,9 @@ _TBD_
 
 | Ayar | Değer |
 |---|---|
-| Zaman damgası timer'ı | _TBD_ |
-| Timer çözünürlüğü / taşma süresi | _TBD_ |
-| HAL timebase kaynağı | _TBD (SysTick FreeRTOS'a ait; ör. TIM6)_ |
+| Zaman damgası timer'ı | TIM2 (32-bit), APB1 timer saati 108 MHz, PSC = 107 |
+| Timer çözünürlüğü / taşma süresi | 1 µs / ≈ 71,6 dk |
+| HAL timebase kaynağı | TIM6 (SysTick FreeRTOS'a ait) |
 | `configTICK_RATE_HZ` | _TBD_ |
 | `configUSE_PREEMPTION` | 1 |
 | `configMAX_PRIORITIES` | _TBD_ |
