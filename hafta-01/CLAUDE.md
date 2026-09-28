@@ -5,17 +5,19 @@
 
 Kullanıcı "Adım N" dediğinde plandaki Adım N'yi uygula ve yalnızca onun kapsamında kal. Bu dosyadaki kurallar ödevin sabit gereksinimleridir; değiştirmen gerektiğini düşünürsen önce gerekçeni anlat ve onay al.
 
-## Donanım: 32F746G-DISCO
+## Donanım: NUCLEO-L476RG
 
 | | |
 |---|---|
-| MCU | STM32F746NG, Cortex-M7, HSE 25 MHz, SYSCLK 216 MHz |
-| UART | USART1: PA9 TX, PB7 RX (ST-LINK sanal COM portu) |
-| Buton | B1 (mavi): PI11, basınca HIGH → EXTI11, yükselen kenar, `EXTI15_10_IRQn` |
-| LED | LD1 (yeşil): PI1, hata göstergesi olarak kullanılır |
-| Zaman damgası | TIM2, 32-bit, APB1 timer saati 108 MHz, PSC = 107 → 1 MHz (1 µs), taşma ≈ 71,6 dk |
+| MCU | STM32L476RG, Cortex-M4F, SYSCLK 80 MHz (azami değer). PLL kaynağı HSI16 veya MSI; HSE kullanılmaz (Nucleo'da X3 kristali varsayılan olarak takılı değildir) |
+| UART | USART2: PA2 TX, PA3 RX (ST-LINK sanal COM portu) |
+| Buton | B1 (mavi): PC13, basınca LOW → EXTI13, düşen kenar, `EXTI15_10_IRQn`. Harici pull-up / RC filtre durumu UM1724 şemasından doğrulanacak |
+| LED | LD2 (yeşil): PA5, hata göstergesi olarak kullanılır |
+| Zaman damgası | TIM2, 32-bit, APB1 timer saati 80 MHz (APB1 bölücü = 1), PSC = 79 → 1 MHz (1 µs), taşma ≈ 71,6 dk |
 | HAL timebase | TIM6 (SysTick FreeRTOS'a aittir) |
-| Önbellek | I-Cache ve D-Cache açık. UART IT modunda çalıştığı için DMA/cache tutarlılığı sorunu yoktur |
+| Önbellek | Cortex-M4'te L1 cache yok. Flash ART hızlandırıcısı (prefetch, instruction/data cache) açık. DMA kullanılmadığı için tutarlılık sorunu yoktur |
+
+Kaynaklar: UM1724 (NUCLEO-64 kullanıcı kılavuzu), RM0351 (reference manual), DS10198 (datasheet).
 
 Bu değerleri kesin kabul etme. Kod yazmadan önce `firmware/` altındaki üretilmiş kodla (`main.c`, `stm32f7xx_hal_msp.c`, `FreeRTOSConfig.h`) karşılaştır; fark varsa kullanıcıya söyle.
 
@@ -59,8 +61,8 @@ Uygulama kodu CubeMX dosyalarından ayrı tutulur. `Core/Src` ve `Core/Inc` alt�
 ## Kesmeler
 
 - ISR'ler kısa olur: bekleme yok, UART yazma yok, `printf` yok, yalnızca `...FromISR` API'leri.
-- EXTI15_10 ve USART1 NVIC öncelikleri sayısal olarak `configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY` değerinden (CubeMX varsayılanı 5) küçük olamaz.
-- Buton filtresi: ilk yükselen kenar kabul edilir ve t₀ alınır. Son kabulden sonraki 30 ms içinde gelen kenarlar `bounce_rejected` sayacına yazılıp atılır.
+- EXTI15_10 ve USART2 NVIC öncelikleri sayısal olarak `configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY` değerinden (CubeMX varsayılanı 5) küçük olamaz.
+- Buton filtresi: ilk düşen kenar kabul edilir ve t₀ alınır. Son kabulden sonraki 30 ms içinde gelen kenarlar `bounce_rejected` sayacına yazılıp atılır.
 
 ## Kuyruklar ve mesajlar
 
@@ -131,7 +133,7 @@ Olay satırı biçimi: `scenario,event_id,t0_us,t1_us,t2_us,t3_us,t4_us,status`
 
 ## FreeRTOS ayarları
 
-`configUSE_PREEMPTION 1`, `configTICK_RATE_HZ 1000`, `configCHECK_FOR_STACK_OVERFLOW 2`, `configUSE_MALLOC_FAILED_HOOK 1`. Hook'larda LD1'i yak ve dur.
+`configUSE_PREEMPTION 1`, `configTICK_RATE_HZ 1000`, `configCHECK_FOR_STACK_OVERFLOW 2`, `configUSE_MALLOC_FAILED_HOOK 1`. Hook'larda LD2'yi yak ve dur.
 
 ## PC tarafı
 

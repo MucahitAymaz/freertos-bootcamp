@@ -8,10 +8,11 @@ Bu belge, sistemi sıfırdan kurup ölçümü tekrar üretebilmek için gereken 
 
 | Bileşen | Değer |
 |---|---|
-| Kart | 32F746G-DISCO |
+| Kart | NUCLEO-L476RG |
 | Bağlantı | USB (ST-LINK): güç, programlama ve sanal COM portu |
-| UART | USART1, PA9 (TX), PB7 (RX) |
-| Buton | B1 (mavi), PI11, basınca HIGH, dahili pull-down |
+| UART | USART2, PA2 (TX), PA3 (RX) |
+| Buton | B1 (mavi), PC13, basınca LOW, düşen kenar. Pull ayarı: _TBD (UM1724 şemasına göre)_ |
+| LED | LD2 (yeşil), PA5 |
 | Ek donanım | _TBD: varsa lojik analizör, harici USB-UART vb._ |
 
 ## 2. Yazılım Araçları
@@ -19,7 +20,7 @@ Bu belge, sistemi sıfırdan kurup ölçümü tekrar üretebilmek için gereken 
 | Araç | Sürüm |
 |---|---|
 | STM32CubeIDE | _TBD_ |
-| STM32CubeF7 paketi | _TBD_ |
+| STM32CubeL4 paketi | _TBD_ |
 | FreeRTOS | _TBD_ |
 | PC arayüzü çalışma ortamı | _TBD_ |
 | Arayüz bağımlılıkları | _TBD_ |

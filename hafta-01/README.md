@@ -12,13 +12,13 @@ STM32 + FreeRTOS üzerinde butona basıldığında orta öncelikli bir görev "b
 
 | Bileşen | Değer |
 |---|---|
-| Kart | 32F746G-DISCO (STM32F746NG, Cortex-M7) |
-| Not | Ödev referansı STM32L476RG'dir; kart temin edilemediği için STM32F746 kullanılmıştır. |
-| MCU saati (SYSCLK) | 216 MHz (HSE 25 MHz) |
-| UART | USART1, TX: PA9, RX: PB7 — ST-LINK sanal COM portu üzerinden |
-| Buton | B1 (mavi), PI11, yükselen kenar (EXTI11, `EXTI15_10_IRQn`) |
+| Kart | NUCLEO-L476RG (STM32L476RG, Cortex-M4F) |
+| MCU saati (SYSCLK) | 80 MHz (HSI16/MSI + PLL; HSE kullanılmıyor) |
+| UART | USART2, TX: PA2, RX: PA3 — ST-LINK sanal COM portu üzerinden |
+| Buton | B1 (mavi), PC13, basınca LOW, düşen kenar (EXTI13, `EXTI15_10_IRQn`) |
+| LED | LD2 (yeşil), PA5 — hata göstergesi |
 | IDE / derleyici | _TBD: STM32CubeIDE sürümü, GCC sürümü_ |
-| STM32CubeF7 HAL | _TBD: sürüm_ |
+| STM32CubeL4 HAL | _TBD: sürüm_ |
 | FreeRTOS | _TBD: sürüm, CMSIS-RTOS arayüzü (v1/v2/doğrudan API)_ |
 | Derleme ayarı | _TBD: Debug/Release, optimizasyon seviyesi_ |
 | PC arayüzü | _TBD: dil, çalışma ortamı sürümü, kütüphaneler_ |
@@ -146,7 +146,7 @@ _TBD_
 
 | Ayar | Değer |
 |---|---|
-| Zaman damgası timer'ı | TIM2 (32-bit), APB1 timer saati 108 MHz, PSC = 107 |
+| Zaman damgası timer'ı | TIM2 (32-bit), APB1 timer saati 80 MHz, PSC = 79 |
 | Timer çözünürlüğü / taşma süresi | 1 µs / ≈ 71,6 dk |
 | HAL timebase kaynağı | TIM6 (SysTick FreeRTOS'a ait) |
 | `configTICK_RATE_HZ` | _TBD_ |
@@ -155,7 +155,7 @@ _TBD_
 | `configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY` | _TBD_ |
 | Buton EXTI NVIC önceliği | _TBD_ |
 | UART NVIC önceliği | _TBD_ |
-| D-Cache | _TBD: açık/kapalı; DMA kullanılıyorsa tampon yönetimi_ |
+| Flash ART (prefetch, I/D cache) | _TBD: açık/kapalı (Cortex-M4'te L1 cache yok)_ |
 | Görev yığın boyutları | _TBD_ |
 
 ---

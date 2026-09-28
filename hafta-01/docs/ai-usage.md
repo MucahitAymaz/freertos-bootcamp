@@ -15,6 +15,12 @@
 | Analiz ve grafik betikleri | _TBD_ | |
 | Hata ayıklama | _TBD_ | |
 
+## Adım kayıtları (Claude Code)
+
+| Adım | Destek verilen iş | Değişen dosyalar | Nasıl doğrulandı | Hangi öneri değiştirildi |
+|---|---|---|---|---|
+| Kart değişikliği (F746 → NUCLEO-L476RG) | Donanım tablosu, CubeMX adımları ve belgelerin L476RG'ye uyarlanması | `CLAUDE.md`, `README.md`, `docs/gelistirme-plani.md`, `docs/setup.md` | (kullanıcı dolduracak) | (kullanıcı dolduracak) |
+
 ## Üretilen kod nasıl kontrol edildi?
 
 _TBD: kod incelemesi, derleme uyarıları, kart üzerinde test, timer ile periyot doğrulama, lojik analizör vb._
