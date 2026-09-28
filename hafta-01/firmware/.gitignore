@@ -1,0 +1,6 @@
+# STM32CubeIDE build output
+Debug/
+Release/
+
+# Eclipse workspace metadata (must live outside the repo)
+.metadata/
