@@ -21,6 +21,7 @@
 |---|---|---|---|---|
 | Kart değişikliği (F746 → NUCLEO-L476RG) | Donanım tablosu, CubeMX adımları ve belgelerin L476RG'ye uyarlanması | `CLAUDE.md`, `README.md`, `docs/gelistirme-plani.md`, `docs/setup.md` | (kullanıcı dolduracak) | (kullanıcı dolduracak) |
 | Adım 1: CubeMX çıktısının kontrolü ve iskelet | Üretilen kodun donanım tablosuyla karşılaştırılması (BSP, TIM2 PSC, EXTI hataları bulundu), `.gitignore`, `app_config.h` ve `app_time.h` iskeleti kullanıcıyla birlikte, görev iskeletleri, `app_start()`, hook'lar | `firmware/.gitignore`, `Core/Inc/app_config.h`, `app_time.h`, `app_main.h`, `Core/Src/app_time.c`, `app_main.c`, `app_telemetry.c`, `app_button.c`, `app_uart.c`, `freertos.c` ve `main.c` (USER CODE blokları) | (kullanıcı dolduracak) | (kullanıcı dolduracak) |
+| Adım 2: UART TX zinciri | TX kuyruğu, `TxMsg`, 64 bayt biçimleme, UartTxTask (IT gönderim, task notification, 1 s timeout), TC callback'inde t4, geçici test üreticisi | `Core/Inc/app_config.h`, `app_main.h`, `app_uart.h`, `Core/Src/app_main.c`, `app_uart.c`, `app_telemetry.c` | (kullanıcı dolduracak) | (kullanıcı dolduracak) |
 
 ## Üretilen kod nasıl kontrol edildi?
 
