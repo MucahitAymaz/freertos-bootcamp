@@ -69,18 +69,19 @@ Bu bir **hipotezdir.** Ödevin amacı, gerçek kart verisiyle bunun doğru olup 
 
 | # | Nerede | Ayar |
 |---|---|---|
-| 1 | Yeni proje | Board Selector → 32F746G-DISCO. "Initialize all peripherals with their default Mode?" → **No** |
+| 1 | Yeni proje | Board Selector → **NUCLEO-L476RG**. "Initialize all peripherals with their default Mode?" → **No** |
 | 2 | Project Manager | Proje adı `firmware`, konum `.../hafta-01/`, Toolchain: STM32CubeIDE. Code Generator: "Generate peripheral initialization as a pair of .c/.h files" işaretli |
-| 3 | RCC | HSE: Crystal/Ceramic Resonator |
-| 4 | Clock Configuration | HCLK kutusuna 216 yaz, Enter. **APB1 Timer clocks = 108 MHz** olduğunu kontrol et |
+| 3 | RCC | HSE: **Disable** (Nucleo'da X3 kristali takılı değil). Parameter Settings: Instruction Cache, Data Cache ve Prefetch Buffer değerlerini not et (README'ye yazılacak) |
+| 4 | Clock Configuration | PLL Source Mux: **HSI** (ya da MSI). HCLK kutusuna **80** yaz, Enter. **APB1 Timer clocks = 80 MHz** olduğunu kontrol et (APB1 Prescaler /1) |
 | 5 | SYS | Debug: Serial Wire. Timebase Source: **TIM6** |
-| 6 | CORTEX_M7 | CPU ICache: Enabled, CPU DCache: Enabled |
-| 7 | USART1 | Mode: Asynchronous. **Pinlerin PA9 (TX) ve PB7 (RX) olduğunu kontrol et**; CubeMX RX'i PA10'a atayabilir. 115200, 8 bit, None, 1 stop. NVIC: USART1 global interrupt ✔ |
-| 8 | GPIO | PI11 → GPIO_EXTI11, External Interrupt Rising edge, Pull-down. PI1 → GPIO_Output (LD1) |
-| 9 | TIM2 | Clock Source: Internal Clock. Prescaler: 107. Counter Period: 4294967295. Kesme yok |
-| 10 | FREERTOS | Interface: CMSIS_V2. USE_PREEMPTION: Enabled, TICK_RATE_HZ: 1000, CHECK_FOR_STACK_OVERFLOW: Option2, USE_MALLOC_FAILED_HOOK: Enabled, TOTAL_HEAP_SIZE: 32768. Tasks and Queues sekmesinde `defaultTask`'ı sil (silinemiyorsa bırak). Advanced Settings: USE_NEWLIB_REENTRANT: Enabled |
-| 11 | NVIC | EXTI line[15:10]: ✔, öncelik 5. USART1: öncelik 6. İkisinde de "Uses FreeRTOS functions" ✔ |
-| 12 | | Generate Code. CubeIDE'de projeyi bir kez derle |
+| 6 | USART2 | Mode: Asynchronous. **Pinlerin PA2 (TX) ve PA3 (RX) olduğunu kontrol et**. 115200, 8 bit, None, 1 stop. NVIC: USART2 global interrupt ✔ |
+| 7 | GPIO | PC13 → GPIO_EXTI13, External Interrupt **Falling** edge. Pull: UM1724 şemasında PC13 üzerinde harici pull-up varsa **No pull-up and no pull-down**, yoksa Pull-up. PA5 → GPIO_Output, User Label `LD2` |
+| 8 | TIM2 | Clock Source: Internal Clock. Prescaler: **79**. Counter Period: 4294967295. Kesme yok |
+| 9 | FREERTOS | Interface: CMSIS_V2. USE_PREEMPTION: Enabled, TICK_RATE_HZ: 1000, CHECK_FOR_STACK_OVERFLOW: Option2, USE_MALLOC_FAILED_HOOK: Enabled, TOTAL_HEAP_SIZE: 32768. Tasks and Queues sekmesinde `defaultTask`'ı sil (silinemiyorsa bırak). Advanced Settings: USE_NEWLIB_REENTRANT: Enabled |
+| 10 | NVIC | EXTI line[15:10]: ✔, öncelik 5. USART2: öncelik 6. İkisinde de "Uses FreeRTOS functions" ✔ |
+| 11 | | Generate Code. CubeIDE'de projeyi bir kez derle |
+
+Not: Cortex-M4'te CPU ICache/DCache ayarı yoktur; F7'deki CORTEX_M7 adımı bu kartta atlanır.
 
 **Claude Code'a:**
 
@@ -88,12 +89,12 @@ Bu bir **hipotezdir.** Ödevin amacı, gerçek kart verisiyle bunun doğru olup 
 Adım 1'e başlıyoruz (docs/gelistirme-plani.md → Adım 1). CubeMX projesini ürettim ve derledim.
 Önce üretilmiş kodu hafta-01/CLAUDE.md'deki donanım tablosuyla karşılaştır ve farkları söyle.
 Sonra app_* dosya iskeletini, timer_us()'i, CubeIDE için .gitignore'u ve üç görevin boş
-iskeletini ekle. Test için TelemetryTask LD1'i 500 ms'de bir yakıp söndürsün (Adım 4'te kaldırılacak).
+iskeletini ekle. Test için TelemetryTask LD2'yi 500 ms'de bir yakıp söndürsün (Adım 4'te kaldırılacak).
 Plan modundayım: önce planını ve kullanacağın RTOS kavramlarını anlat.
 ```
 
 **Bitti sayılır:**
-- LD1 saniyede bir yanıp sönüyor.
+- LD2 saniyede bir yanıp sönüyor.
 - CubeIDE debugger'da Live Expressions'a `TIM2->CNT` ekle: saniyede yaklaşık 1.000.000 artıyor.
 - Derleme uyarısı yok.
 
