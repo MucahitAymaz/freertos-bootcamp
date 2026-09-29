@@ -46,7 +46,13 @@ typedef struct
     uint32_t fmt_error;         /* message did not fit in 63 bytes */
     uint32_t cmd_drop;          /* RX ISR: TX queue full for a command */
     uint32_t rx_error;          /* RX ISR: UART error, reception restarted */
+    uint32_t tel_period_min_us; /* TelemetryTask: measured wake-to-wake period */
+    uint32_t tel_period_max_us;
+    uint32_t work_min_us;       /* TelemetryTask: measured CPU work duration */
+    uint32_t work_max_us;
 } Counters;
+
+#define STAT_UNSET              (0xFFFFFFFFUL)   /* min fields before the first sample */
 
 extern volatile Counters g_cnt;
 

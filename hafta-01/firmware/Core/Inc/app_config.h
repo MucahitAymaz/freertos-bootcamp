@@ -30,7 +30,7 @@
 
 /* ---- UART RX commands ---- */
 #define RX_LINE_MAX             (32U)     /* longest accepted command line incl. '\0' */
-#define DUMP_LINE_MAX           (160U)    /* DUMP/CNT lines are not bound to 64 bytes */
+#define DUMP_LINE_MAX           (384U)    /* DUMP/CNT lines are not bound to 64 bytes */
 
 /* ---- Button chain ---- */
 #define BTN_QUEUE_LEN           (8U)      /* ButtonEvent items */
@@ -39,7 +39,26 @@
 /* ---- Event log ---- */
 #define EVENT_LOG_SIZE          (64U)     /* records kept in RAM; more events -> log_overflow */
 
-/* ---- Step 1 test only: LD2 toggle period, removed in step 4 ---- */
-#define LED_TEST_PERIOD_MS      (500U)
+/* ---- Scenarios: telemetry period and CPU work per period ---- */
+typedef struct
+{
+    uint16_t period_ms;   /* 0 = telemetry off */
+    uint16_t work_us;     /* 0 = no extra CPU work */
+} ScenarioCfg;
+
+#define SCENARIO_COUNT          (6U)
+#define SCENARIO_TABLE                                                  \
+    {                                                                   \
+        { 0U,   0U    },   /* S0: reference, telemetry off */           \
+        { 100U, 0U    },   /* S1: 10 Hz */                              \
+        { 20U,  0U    },   /* S2: 50 Hz */                              \
+        { 10U,  0U    },   /* S3: 100 Hz */                             \
+        { 10U,  2000U },   /* S4: 100 Hz + ~2 ms CPU work */            \
+        { 10U,  5000U },   /* S5: 100 Hz + ~5 ms CPU work */            \
+    }
+
+/* ---- CPU work calibration ---- */
+#define CAL_ITERS               (20000U)  /* iterations timed at startup */
+#define CAL_RUNS                (5U)      /* best of N runs, filters ISR noise */
 
 #endif /* APP_CONFIG_H_ */

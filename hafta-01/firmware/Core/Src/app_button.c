@@ -13,6 +13,12 @@ static uint32_t s_next_id = 1U;
 static uint32_t s_last_accept_us;
 static bool     s_have_accept;
 
+void button_reset(void)
+{
+    s_next_id     = 1U;
+    s_have_accept = false;
+}
+
 /* EXTI ISR path: timestamp, filter, record, hand over to ButtonTask. No waiting here. */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {

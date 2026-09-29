@@ -4,6 +4,12 @@
 #include <stdint.h>
 #include "FreeRTOS.h"
 #include "queue.h"
+#include "task.h"
+
+/* Task handles: used for notifications and stack high-water marks */
+extern TaskHandle_t g_task_telemetry;
+extern TaskHandle_t g_task_button;
+extern TaskHandle_t g_task_uart;
 
 /* Shared TX queue: every producer sends TxMsg here, only UartTxTask consumes */
 extern QueueHandle_t g_tx_queue;

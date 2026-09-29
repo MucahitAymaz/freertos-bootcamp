@@ -5,6 +5,7 @@
 #include "app_uart.h"
 #include "app_main.h"
 #include "app_eventlog.h"
+#include "app_telemetry.h"
 #include "app_time.h"
 #include "usart.h"
 
@@ -88,6 +89,19 @@ static void send_line(const char *fmt, ...)
     (void)uart_send(s_dump_buf, (uint16_t)len, 0U);
 }
 
+/* Writes value, or an empty string when the stat never got a sample (min still unset) */
+static void fmt_stat(char *out, size_t size, uint32_t value, uint32_t min_value)
+{
+    if (min_value == STAT_UNSET)
+    {
+        out[0] = '\0';
+    }
+    else
+    {
+        (void)snprintf(out, size, "%" PRIu32, value);
+    }
+}
+
 static void dump_log(void)
 {
     char f[TS_COUNT][12];
@@ -119,13 +133,28 @@ static void dump_log(void)
                   eventlog_status_name(r->status));
     }
 
+    /* Min/max stats that never got a sample are sent as empty fields */
+    char pmin[12], pmax[12], wmin[12], wmax[12];
+    fmt_stat(pmin, sizeof(pmin), g_cnt.tel_period_min_us, g_cnt.tel_period_min_us);
+    fmt_stat(pmax, sizeof(pmax), g_cnt.tel_period_max_us, g_cnt.tel_period_min_us);
+    fmt_stat(wmin, sizeof(wmin), g_cnt.work_min_us, g_cnt.work_min_us);
+    fmt_stat(wmax, sizeof(wmax), g_cnt.work_max_us, g_cnt.work_min_us);
+
     send_line("CNT,bounce_rejected=%" PRIu32 ",btn_drop=%" PRIu32 ",tx_drop_tel=%" PRIu32
               ",tx_drop_btn=%" PRIu32 ",tx_error=%" PRIu32 ",timeout=%" PRIu32
               ",log_overflow=%" PRIu32 ",fmt_error=%" PRIu32 ",cmd_drop=%" PRIu32
-              ",rx_error=%" PRIu32 "\n",
+              ",rx_error=%" PRIu32
+              ",tel_period_min_us=%s,tel_period_max_us=%s,work_min_us=%s,work_max_us=%s"
+              ",cal_us=%" PRIu32 ",cal_iters=%u"
+              ",hwm_tel_words=%u,hwm_btn_words=%u,hwm_uart_words=%u\n",
               g_cnt.bounce_rejected, g_cnt.btn_drop, g_cnt.tx_drop_tel,
               g_cnt.tx_drop_btn, g_cnt.tx_error, g_cnt.timeout,
-              g_cnt.log_overflow, g_cnt.fmt_error, g_cnt.cmd_drop, g_cnt.rx_error);
+              g_cnt.log_overflow, g_cnt.fmt_error, g_cnt.cmd_drop, g_cnt.rx_error,
+              pmin, pmax, wmin, wmax,
+              telemetry_cal_us(), (unsigned)CAL_ITERS,
+              (unsigned)uxTaskGetStackHighWaterMark(g_task_telemetry),
+              (unsigned)uxTaskGetStackHighWaterMark(g_task_button),
+              (unsigned)uxTaskGetStackHighWaterMark(g_task_uart));
     send_line("END\n");
 }
 
@@ -133,9 +162,35 @@ static void handle_command(const char *cmd)
 {
     if (strcmp(cmd, "DUMP") == 0)
     {
+        /* Records are read while nothing else produces: only after STOP (or in S0) */
+        if (telemetry_is_running())
+        {
+            send_line("ERR,DUMP needs STOP first\n");
+            return;
+        }
         dump_log();
     }
-    /* SCN and STOP are added in step 4 */
+    else if (strcmp(cmd, "STOP") == 0)
+    {
+        telemetry_stop();
+        send_line("ACK,STOP\n");
+    }
+    else if ((strncmp(cmd, "SCN,S", 5) == 0) && (cmd[5] >= '0') && (cmd[5] <= '9') && (cmd[6] == '\0'))
+    {
+        uint8_t scn = (uint8_t)(cmd[5] - '0');
+        if (telemetry_set_scenario(scn))
+        {
+            send_line("ACK,SCN,S%u\n", (unsigned)scn);
+        }
+        else
+        {
+            send_line("ERR,unknown scenario\n");
+        }
+    }
+    else
+    {
+        send_line("ERR,unknown command\n");
+    }
 }
 
 void UartTxTask(void *argument)

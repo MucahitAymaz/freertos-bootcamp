@@ -20,6 +20,8 @@ void eventlog_reset(void)
 {
     memset(s_log, 0, sizeof(s_log));
     memset((void *)&g_cnt, 0, sizeof(g_cnt));
+    g_cnt.tel_period_min_us = STAT_UNSET;
+    g_cnt.work_min_us       = STAT_UNSET;
     s_count = 0U;
 }
 

@@ -10,4 +10,7 @@ typedef struct
     uint32_t t0;   /* timer_us() at the first line of the EXTI callback */
 } ButtonEvent;
 
+/* Restarts event ids at 1 and clears the filter. Call inside a critical section. */
+void button_reset(void);
+
 #endif /* APP_BUTTON_H_ */
