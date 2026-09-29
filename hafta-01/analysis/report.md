@@ -54,33 +54,35 @@ Grafik üretme kodu: [analysis/analyze.py](analyze.py). Çizim fonksiyonları PC
 
 ## 5. Bulgular
 
-Her bulgu şu sorulara yanıt verir: **Ne kadar? Hangi koşulda? Hangi aşamada?**
-
-> Taslak: Bu bölümdeki yorumlar tablolardaki sayılara dayanılarak Claude tarafından yazıldı. Kullanıcı gözden geçirip kendi cümleleriyle son haline getirecek.
+> Not: 5. ve 6. bölümler Claude ile birlikte yazıldı (bkz. [ai-usage.md](../docs/ai-usage.md)). Sayıların hepsi bölüm 2–3'teki betik çıktısından alındı.
 
 ### 5.1 Telemetri frekansının etkisi (S0 → S1 → S2 → S3)
 
-- **Değişen aşama yalnızca t₃ − t₂.** Ortalaması 0,056 → 0,215 → 0,481 → 1,492 ms oldu, yani S0'dan S3'e yaklaşık 27 kat arttı. Aynı senaryolarda t₁ − t₀ (0,024–0,025 ms), t₂ − t₁ (0,037–0,039 ms) ve t₄ − t₃ (5,559 ms) sabit kaldı.
-- **Mekanizma:** BTN yanıtı, TEL mesajlarıyla aynı FIFO TX kuyruğunu ve aynı UART hattını paylaşıyor. Butona basıldığında hatta bir TEL mesajı varsa BTN onun bitmesini bekliyor. Bu bekleme en fazla bir mesaj süresi kadar olabilir (≈ 5,56 ms). Gözlenen t₃ − t₂ maksimumları da bu sınırın altında: 2,701 / 5,106 / 5,038 ms.
-- **Ne kadar sık?** t₃ − t₂ süresi 1 ms'yi aşan olay sayısı S1'de 2/30, S2'de 4/30, S3'te 15/30. Hat doluluğu ise sırasıyla %5,6, %27,8 ve %55,6 (5,56 ms / periyot). S1 ve S3'teki oranlar hat doluluğuna yakın. S2'deki oran beklenenden düşük; 30 örnekle bu sapma rastlantısal olabilir.
-- **Deadline:** S0–S3'te bütün olaylar 20 ms'nin altında kaldı. En büyük gözlenen R 10,730 ms (S2).
+Ölçüme başlamadan önceki beklentimiz, telemetri sıklaştıkça BTN yanıtının TX kuyruğunda TEL mesajlarının arkasında kalacağı ve bu yüzden t₃ − t₂'nin uzayacağıydı. İlk dört senaryo bu beklentiyle örtüştü. Üstelik değişim yalnızca o aşamada kaldı. t₃ − t₂ ortalaması S0'da 0,056 ms iken S1'de 0,215, S2'de 0,481, S3'te 1,492 ms oldu. Aynı sürede t₁ − t₀ 0,024–0,025 ms'de, t₂ − t₁ 0,037–0,039 ms'de, hat süresi t₄ − t₃ ise 5,559 ms'de hiç kıpırdamadı.
+
+Bu bekleme her basışta ortaya çıkmıyor. Butona basıldığı anda hatta bir TEL mesajı varsa BTN onun bitmesini bekliyor, yoksa hiç beklemiyor. Bu yüzden t₃ − t₂'nin 1 ms'yi aştığı olay sayısı, hattın ne kadar dolu olduğuyla birlikte arttı: S1'de 2/30, S2'de 4/30, S3'te 15/30. Hat doluluğu ise sırasıyla %5,6, %27,8 ve %55,6. S1 ve S3'teki oranlar bu basit modele oldukça yakın. S2'de beklenenden az bekleme gördük; 30 basışla bunun rastlantı mı yoksa gerçek bir etki mi olduğunu söyleyemiyoruz. Tek bir beklemenin üst sınırı da bir mesaj süresi (≈ 5,6 ms). Gözlenen en uzun beklemeler (2,701 / 5,106 / 5,038 ms) bu sınırın altında kaldı.
+
+Sonuç olarak telemetri tek başına sistemi deadline'a yaklaştırmadı. S0–S3'teki en kötü gözlem 10,730 ms (S2) oldu ve bütün olaylar 20 ms'nin altında kaldı.
 
 ### 5.2 CPU yükünün etkisi (S3 → S4 → S5)
 
-- **t₁ − t₀ büyüdü.** Ortalama 0,024 → 0,167 → 0,698 ms, maksimum 0,027 → 1,775 → 4,438 ms. Maksimumlar CPU işinin süresiyle sınırlı (≈ 2 ve ≈ 5 ms). Butona iş sırasında basılırsa ButtonTask (öncelik 2), TelemetryTask'ın (öncelik 3) işini bitirmesini bekliyor. Bu doğrudan preemption etkisi.
-- **t₃ − t₂ çok daha fazla büyüdü.** S3 → S4 arasında ortalama 1,492 → 2,414 ms. S5'te 115,472 ms'ye çıktı, gözlenen maksimum 159,369 ms.
-- **S5'te sistem doyuma ulaştı:** 28 başarılı olayın 27'si 20 ms'yi aştı. 2 BTN yanıtı (`tx_drop`) ve 14 TEL mesajı TX kuyruğu dolduğu için düşürüldü. Grafik 4.1'de R her basışta yaklaşık 10 ms artıyor ve 15. olaydan sonra ≈ 160 ms'de düzleşiyor (olay ≥ 15 için R ort 163,1 ms).
-- **Mekanizma:** S5'te her 10 ms'lik periyodun ilk ≈ 5 ms'sinde TelemetryTask CPU işini yapıyor. UartTxTask en düşük öncelikte olduğu için TC kesmesi bu sırada gelse bile yeni gönderimi başlatamıyor ve UART hattı boşta bekliyor. Veri bunu gösteriyor: S5'teki 28 başarılı olayın hepsinde t₃, 10 ms'lik periyodun 7183–7190 µs aralığına düşüyor. UartTxTask yalnızca iş bittikten hemen sonra CPU alabiliyor. Bu durumda hat periyot başına yalnızca 1 mesaj gönderebiliyor. Telemetri de periyot başına 1 mesaj ürettiği için her BTN mesajı kuyruğa kalıcı bir fazlalık ekliyor. Kuyruk 16 mesajda doluyor (16 × 10 ms ≈ 160 ms). Bu noktadan sonra yeni mesajlar düşürülüyor.
+CPU yükünde beklentimiz farklıydı. TelemetryTask öncelik 3'te 2 ya da 5 ms hesap yaparken ButtonTask'ın (öncelik 2) CPU'yu bekleyeceğini ve bu yüzden asıl t₁ − t₀'ın büyüyeceğini düşünüyorduk. Bu gerçekten oldu, ama beklediğimiz ölçekte kaldı: t₁ − t₀ ortalaması 0,024 → 0,167 → 0,698 ms'ye çıktı ve en kötü değerler (1,775 ve 4,438 ms) iş süresini hiç aşmadı. Basış işin ortasına denk gelirse ButtonTask işin bitmesini bekliyor, denk gelmezse hiç beklemiyor.
+
+Asıl sürpriz yine t₃ − t₂'deydi. S4'te ortalaması 2,414 ms ile S3'ün biraz üstünde kaldı. S5'te ise 115,472 ms'ye fırladı. S5'in grafiği (4.1) diğerlerinden tamamen farklı görünüyor: R ilk basışta 19,2 ms, sonra her basışta yaklaşık 10 ms artıyor ve 15. olaydan sonra ≈ 163 ms'de sabitleniyor. 28 başarılı olayın 27'si deadline'ı kaçırdı. İki BTN yanıtı ise hiç gönderilemedi (`tx_drop`). Kart aynı senaryoda 14 TEL mesajını da düşürdü.
+
+Bu davranışı ilk olarak kuru denemede gördük ve nedenini ölçümden önce çözmeye çalıştık. S5'te her 10 ms'lik periyodun ilk ≈ 5 ms'sinde TelemetryTask hesap yapıyor. UartTxTask en düşük öncelikte olduğu için, bir mesajın gönderimi bu sırada biterse sıradaki mesaja ancak hesap bittikten sonra başlayabiliyor. Bu arada UART hattı boşta bekliyor. Sonuçta hat periyot başına yalnızca bir mesaj gönderebiliyor. Telemetri de periyot başına tam bir mesaj ürettiği için kuyrukta boşalacak yer kalmıyor ve her BTN mesajı kalıcı bir fazlalık olarak birikiyor. Kuyruk 16 mesaj dolunca (16 × 10 ms ≈ 160 ms) plato oluşuyor ve yeni gelen mesajlar düşürülmeye başlıyor.
+
+Bu açıklamayı destekleyen en güçlü kanıt t₃'lerin zamanlaması oldu. S5'teki 28 başarılı olayın hepsinde t₃, 10 ms'lik periyodun 7183–7190 µs aralığına düşüyor. Yani UART gönderimi her seferinde periyodun aynı 7 µs'lik diliminde başlıyor: hesabın bittiği anda. Aynı bant S3'te 4740–8361 µs, S4'te 6743–8820 µs genişliğindeydi. Yük arttıkça UartTxTask'ın çalışabildiği zaman aralığı gözle görülür şekilde daralıyor.
 
 ## 6. Değerlendirme
 
-- **Hangi bileşen değişti?** En büyük değişim t₃ − t₂'de, yani ortak TX kuyruğunda bekleme ve UartTxTask'ın CPU'ya erişim süresinde. t₁ − t₀ yalnızca CPU yükü olan senaryolarda ve iş süresiyle sınırlı ölçüde büyüdü. t₂ − t₁ ile t₄ − t₃ hiçbir senaryoda değişmedi.
-- **Neden?** İki tasarım kararı birleşiyor: (1) BTN ve TEL mesajları tek bir FIFO kuyrukta öncelik farkı olmadan sıraya giriyor. (2) UART'ın tek sahibi en düşük öncelikli görev. Hat kapasitesi S5'te bile %55,6 kullanımla yeterliydi. Darboğaz UART değil, UartTxTask'ın CPU'ya erişemediği sürelerde hattın boşta kalması.
-- **Hangi ölçüm destekliyor?** Aşama tablosu (bölüm 3), S5'te t₃'lerin 7 µs'lik bir faz bandında toplanması, S5 platosunun kuyruk uzunluğu × periyot ile örtüşmesi ve kart sayaçları (`tx_drop_tel = 14`, `tx_drop_btn = 2`).
-- **Ne henüz bilinmiyor?**
-  - Önerilebilecek düzeltmelerin etkisi ölçülmedi: UartTxTask önceliğini yükseltmek, BTN için ayrı ya da öncelikli bir kuyruk, UART DMA ile ardışık gönderim, TEL için kuyruk doluluğuna bağlı atlama.
-  - S5'te doyum başladıktan sonra R, basış sayısına bağlı. Ortalama ve medyan senaryonun sabit bir özelliği değil, ölçüm uzunluğunun bir sonucu. Daha uzun ya da daha kısa ölçümler farklı ortalama verir.
-  - Optimizasyonlu derlemenin (`-Os`) aşama sürelerine etkisi ölçülmedi.
+Bu ölçümden çıkardığımız en önemli sonuç, gecikmenin beklediğimiz yerde değil, bir aşama sonra birikmesiydi. CPU yükü eklediğimizde t₁ − t₀'ın büyümesini bekliyorduk ve büyüdü. Ama bu artış en fazla birkaç milisaniyede kaldı. Sistemi deadline'ın çok ötesine taşıyan şey, yanıtın TX kuyruğunda beklediği t₃ − t₂ oldu. t₂ − t₁ ve hat süresi t₄ − t₃ ise hiçbir senaryoda değişmedi. Bu da yanıt hazırlamanın ve fiziksel iletimin sorun olmadığını gösteriyor.
+
+Bunun iki nedeni var ve ikisi birlikte etkili oluyor. Birincisi, BTN yanıtı ile TEL mesajları aynı FIFO kuyrukta, aralarında hiçbir öncelik farkı olmadan sıraya giriyor. Butona basan kullanıcının yanıtı, kuyrukta onun önünde bekleyen telemetri kadar gecikiyor. İkincisi, UART'ın tek sahibi en düşük öncelikli görev. Hattın kapasitesi aslında yeterliydi: S5'te bile doluluk %55,6 idi. Ama UartTxTask CPU'yu alamadığı sürece hat boş bekliyor. Kısacası darboğaz UART'ın kendisi değil, UART'ı süren görevin önceliği.
+
+Bu yorumu dört ölçüme dayandırıyoruz: bölüm 3'teki aşama tablosu, S5'te t₃'lerin 7 µs'lik tek bir faz bandında toplanması, S5 platosunun kuyruk uzunluğu × periyot hesabıyla (≈ 160 ms) örtüşmesi ve kartın düşürülen mesajları sayan sayaçları (`tx_drop_tel = 14`, `tx_drop_btn = 2`).
+
+Bilmediğimiz şeyler de var. En başta, olası düzeltmelerin hiçbirini denemedik. UartTxTask'ın önceliğini yükseltmek, BTN yanıtları için ayrı ya da öncelikli bir kuyruk kullanmak, UART'ı DMA ile sürmek ya da kuyruk dolmaya başladığında TEL mesajlarını atlamak bu sorunu büyük ihtimalle çözer. Ama hangisinin ne kadar iyileştireceğini ancak yeni bir ölçüm gösterebilir. Ayrıca S5'teki ortalama ve medyan, senaryonun sabit bir özelliği değil: sistem doyuma ulaştıktan sonra R, kaç kez basıldığına bağlı. 60 basış yapsaydık ortalama farklı çıkardı. Bu yüzden S5 için ortalamadan çok platoyu anlamlı buluyoruz. Son olarak ölçümler Debug (`-O0`) derlemesiyle alındı. Optimizasyonlu bir derlemede yazılım aşamaları kısalır, ama S5'teki birikim mekanizmasının değişmeyeceğini düşünüyoruz, çünkü o mekanizma kodun hızından değil görev önceliklerinden kaynaklanıyor.
 
 ## 7. Ölçümün Sınırları
 
