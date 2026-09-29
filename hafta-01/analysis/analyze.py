@@ -37,6 +37,7 @@ SCN_DESC = {
     "S5": "10 ms, ≈5 ms iş",
 }
 DEADLINE_US = 20_000
+MIN_PRESS_GAP_S = 0.5
 
 
 def p95(values: list) -> float:
@@ -86,6 +87,9 @@ def analyse() -> tuple:
 
         R = [r.r_us for r in good]
         stages = [[r.stage_us(i) for r in good] for i in range(4)]
+        # Press spacing from the board's own t0 stamps (procedure: >= 0.5 s)
+        t0s = [r.t[0] for r in rows if r.t[0] is not None]
+        gaps = [((b - a) & 0xFFFFFFFF) / 1e6 for a, b in zip(t0s, t0s[1:])]
         status = {s: sum(r.status == s for r in rows)
                   for s in ("btn_drop", "tx_drop", "tx_error", "timeout")}
         summary.append({
@@ -116,6 +120,9 @@ def analyse() -> tuple:
             "tel_period_max_us": cnt.get("tel_period_max_us", ""),
             "work_min_us": cnt.get("work_min_us", ""),
             "work_max_us": cnt.get("work_max_us", ""),
+            "press_gap_min_s": round(min(gaps), 3) if gaps else "",
+            "press_gap_median_s": round(median(gaps), 3) if gaps else "",
+            "press_gap_under_0_5s": sum(g < MIN_PRESS_GAP_S for g in gaps),
             "tel_rate_hz": tel_rate(cnt),
             "txq_hwm": cnt.get("txq_hwm", ""),
             "txq_hwm_tel": cnt.get("txq_hwm_tel", ""),
@@ -226,6 +233,12 @@ def write_tables(summary: list, excluded: list) -> None:
         btq = s["btnq_hwm"] or "ölçülmedi"
         lines.append(f"| {s['scenario']} | {rate} | {per} | {work} | {txq} | {btq} | "
                      f"{s['tx_drop_tel']} | {s['bounce_rejected']} |")
+    lines += ["", "## Prosedür kontrolü (basış aralıkları, kartın t₀ damgalarından)", "",
+              "| Senaryo | Kabul edilen olay | Basış aralığı min (s) | medyan (s) | 0,5 s'den kısa |",
+              "|---|---|---|---|---|"]
+    for s in summary:
+        lines.append(f"| {s['scenario']} | {s['accepted']} | {str(s['press_gap_min_s']).replace('.', ',')} | "
+                     f"{str(s['press_gap_median_s']).replace('.', ',')} | {s['press_gap_under_0_5s']} |")
     lines += ["", "## Ek gözlemler", ""] + extra_observations() + ["", "## Dışlanan kayıtlar", ""]
     if excluded:
         lines += ["Zaman istatistiklerinden dışlandı; özet tablodaki olay sayılarında ve kayıp sütunlarında yer alır.", "",
