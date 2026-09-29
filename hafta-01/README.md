@@ -221,5 +221,6 @@ hafta-01/
 
 ## 9. Teslim
 
-- Teslim commit'i: _TBD: SHA_
+- Teslim commit'i: `e8d04e6bbda2068f35801371f82643e78f62df4f` (kod, ölçümler, analiz ve belgeler; `main` ve `hafta-1` branch'lerinde). Sonraki commit'ler yalnızca bu satırı ve kök README'yi ekler.
+- Ölçülen firmware: `olcum-v2` tag'i (`5baf768`)
 - Anlatım videosu: _TBD: bağlantı_
