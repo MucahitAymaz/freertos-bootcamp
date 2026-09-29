@@ -57,6 +57,14 @@ def ms(us: float) -> float:
     return us / 1000.0
 
 
+def tel_rate(cnt: dict) -> str:
+    """Measured telemetry rate from the board's min/max period counters ("" when off)."""
+    lo, hi = cnt.get("tel_period_min_us", ""), cnt.get("tel_period_max_us", "")
+    if not lo or not hi:
+        return ""
+    return f"{1e6 / ((int(lo) + int(hi)) / 2):.2f}"
+
+
 def analyse() -> tuple:
     data, summary, excluded = {}, [], []
     for scn in SCENARIOS:
@@ -108,6 +116,11 @@ def analyse() -> tuple:
             "tel_period_max_us": cnt.get("tel_period_max_us", ""),
             "work_min_us": cnt.get("work_min_us", ""),
             "work_max_us": cnt.get("work_max_us", ""),
+            "tel_rate_hz": tel_rate(cnt),
+            "txq_hwm": cnt.get("txq_hwm", ""),
+            "txq_hwm_tel": cnt.get("txq_hwm_tel", ""),
+            "txq_hwm_btn": cnt.get("txq_hwm_btn", ""),
+            "btnq_hwm": cnt.get("btnq_hwm", ""),
         })
     return data, summary, excluded
 
@@ -202,12 +215,17 @@ def write_tables(summary: list, excluded: list) -> None:
             f"| {s['scenario']} | {fmt(s['t1_t0_mean_ms'])} | {fmt(s['t2_t1_mean_ms'])} | "
             f"{fmt(s['t3_t2_mean_ms'])} | {fmt(s['t4_t3_mean_ms'])} | {fmt(s['r_mean_ms'])} |")
     lines += ["", "## Kart sayaçları", "",
-              "| Senaryo | tx_drop_tel | bounce_rejected | periyot min/maks (µs) | CPU işi min/maks (µs) |",
-              "|---|---|---|---|---|"]
+              "| Senaryo | Gerçek telemetri hızı (Hz) | periyot min/maks (µs) | CPU işi min/maks (µs) | "
+              "TX kuyruğu HWM (/16) | Buton kuyruğu HWM (/8) | tx_drop_tel | bounce_rejected |",
+              "|---|---|---|---|---|---|---|---|"]
     for s in summary:
         per = f"{s['tel_period_min_us']} / {s['tel_period_max_us']}" if s["tel_period_min_us"] else "—"
         work = f"{s['work_min_us']} / {s['work_max_us']}" if s["work_min_us"] else "—"
-        lines.append(f"| {s['scenario']} | {s['tx_drop_tel']} | {s['bounce_rejected']} | {per} | {work} |")
+        rate = s["tel_rate_hz"].replace(".", ",") if s["tel_rate_hz"] else "kapalı"
+        txq = s["txq_hwm"] or "ölçülmedi"
+        btq = s["btnq_hwm"] or "ölçülmedi"
+        lines.append(f"| {s['scenario']} | {rate} | {per} | {work} | {txq} | {btq} | "
+                     f"{s['tx_drop_tel']} | {s['bounce_rejected']} |")
     lines += ["", "## Ek gözlemler", ""] + extra_observations() + ["", "## Dışlanan kayıtlar", ""]
     if excluded:
         lines += ["Zaman istatistiklerinden dışlandı; özet tablodaki olay sayılarında ve kayıp sütunlarında yer alır.", "",

@@ -50,6 +50,9 @@ typedef struct
     uint32_t tel_period_max_us;
     uint32_t work_min_us;       /* TelemetryTask: measured CPU work duration */
     uint32_t work_max_us;
+    uint32_t txq_hwm_tel;       /* TelemetryTask: highest TX queue level seen after its sends */
+    uint32_t txq_hwm_btn;       /* ButtonTask: highest TX queue level seen after its sends */
+    uint32_t btnq_hwm;          /* EXTI ISR: highest button queue level seen after its sends */
 } Counters;
 
 #define STAT_UNSET              (0xFFFFFFFFUL)   /* min fields before the first sample */

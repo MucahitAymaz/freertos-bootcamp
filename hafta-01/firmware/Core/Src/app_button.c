@@ -44,10 +44,19 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     (void)eventlog_open(e.id, now);
 
     BaseType_t woken = pdFALSE;
+    uint32_t level = BTN_QUEUE_LEN;
     if (xQueueSendFromISR(g_btn_queue, &e, &woken) != pdPASS)
     {
         g_cnt.btn_drop++;
         eventlog_set_status(e.id, EV_BTN_DROP);
+    }
+    else
+    {
+        level = (uint32_t)uxQueueMessagesWaitingFromISR(g_btn_queue);
+    }
+    if (level > g_cnt.btnq_hwm)
+    {
+        g_cnt.btnq_hwm = level;
     }
     portYIELD_FROM_ISR(woken);
 }
@@ -73,7 +82,13 @@ void ButtonTask(void *argument)
 
         uint32_t t2 = timer_us();   /* t2: right before xQueueSend */
         BaseType_t ok = xQueueSend(g_tx_queue, &m, 0);
+        uint32_t level = (ok == pdPASS) ? (uint32_t)uxQueueMessagesWaiting(g_tx_queue)
+                                        : TX_QUEUE_LEN;   /* failed send: queue was full */
         eventlog_set_ts(e.id, TS_T2, t2);
+        if (level > g_cnt.txq_hwm_btn)
+        {
+            g_cnt.txq_hwm_btn = level;
+        }
 
         if (ok != pdPASS)
         {
