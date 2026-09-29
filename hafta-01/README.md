@@ -17,12 +17,12 @@ STM32 + FreeRTOS üzerinde butona basıldığında orta öncelikli bir görev "b
 | UART | USART2, TX: PA2, RX: PA3 — ST-LINK sanal COM portu üzerinden |
 | Buton | B1 (mavi), PC13, basınca LOW, düşen kenar (EXTI13, `EXTI15_10_IRQn`) |
 | LED | LD2 (yeşil), PA5 — hata göstergesi |
-| IDE / derleyici | _TBD: STM32CubeIDE sürümü, GCC sürümü_ |
-| STM32CubeL4 HAL | _TBD: sürüm_ |
-| FreeRTOS | _TBD: sürüm, CMSIS-RTOS arayüzü (v1/v2/doğrudan API)_ |
-| Derleme ayarı | _TBD: Debug/Release, optimizasyon seviyesi_ |
-| PC arayüzü | _TBD: dil, çalışma ortamı sürümü, kütüphaneler_ |
-| PC işletim sistemi | _TBD_ |
+| IDE / derleyici | STM32CubeIDE 2.1.1 · GNU Tools for STM32 14.3.rel1 (arm-none-eabi-gcc) · STM32CubeMX 6.18.1 |
+| STM32CubeL4 HAL | STM32Cube FW_L4 V1.18.2 |
+| FreeRTOS | V10.3.1 · CubeMX arayüzü CMSIS_V2, uygulama görevleri doğrudan FreeRTOS API'siyle (`xTaskCreate`) |
+| Derleme ayarı | Debug · `-O0 -g3` |
+| PC arayüzü | Python 3.12.10 · tkinter · pyserial 3.5 · matplotlib 3.11.2 ([requirements.txt](interface/requirements.txt)) |
+| PC işletim sistemi | Windows 11 Pro |
 
 ---
 
@@ -112,11 +112,19 @@ Beş damga da kart üzerindeki aynı timer'dan alınır: TIM2, 32-bit, 1 MHz →
 | S4 | 100 Hz · 10 ms | ≈ 2 ms / periyot | Ek CPU yükü |
 | S5 | 100 Hz · 10 ms | ≈ 5 ms / periyot | Daha yüksek CPU yükü |
 
-Ek CPU işi: _TBD: kullanılan hesaplama işi ve kalibrasyon yöntemi (iterasyon sayısı ↔ ölçülen süre)_.
+Ek CPU işi: sabit iterasyonlu tamsayı LCG döngüsü (`x = x·1664525 + 1013904223`). Sonuç `volatile` bir değişkene yazıldığı için derleyici döngüyü silemez. Kesmeler açık kalır, `vTaskDelay` kullanılmaz. Açılışta 20 000 iterasyon TIM2 ile 5 kez ölçülür ve en kısa süre alınır. Senaryonun iterasyon sayısı `hedef_µs × 20000 / ölçülen_µs` ile hesaplanır. Her çalışmada gerçek süre yeniden ölçülür ve `work_min_us` / `work_max_us` sayaçlarına yazılır.
 
 ### 4.1 Senaryo seçimi
 
-_TBD: senaryonun nasıl seçildiği (PC arayüzünden komut / derleme sabiti / buton kombinasyonu)._
+Senaryo çalışma anında UART komutuyla seçilir. Firmware yeniden derlenmez.
+
+| Komut | Etki |
+|---|---|
+| `SCN,Sx` | Senaryoyu seçer; olay kayıtlarını, sayaçları ve olay kimliklerini sıfırlar; TelemetryTask'ı uyandırır. Yanıt: `ACK,SCN,Sx` |
+| `STOP` | Telemetriyi durdurur. Yanıt: `ACK,STOP` |
+| `DUMP` | Yalnızca telemetri dururken: CSV başlığı, olay satırları, `CNT,...` sayaç satırı ve `END` |
+
+Komutlar PC arayüzündeki düğmelerle ya da herhangi bir seri terminalden gönderilebilir.
 
 ### 4.2 Ölçüm adımları (her senaryoda aynı sıra)
 
@@ -126,7 +134,7 @@ _TBD: senaryonun nasıl seçildiği (PC arayüzünden komut / derleme sabiti / b
 4. Telemetriyi durdurun; TX'i tamamlayın veya timeout kaydedin. Sonra kayıtları dışarı aktarın.
 5. Ham CSV'yi `measurements/` altına kaydedin; grafikleri aynı ham veriden üretin.
 
-Her kabul edilen olay `ok`, `drop`, `tx_error` veya `timeout` olarak izlenir. Kayıplar sonuçtan gizlenmez ve "deadline karşılandı" olarak sayılmaz.
+Her kabul edilen olay `ok`, `btn_drop` (buton kuyruğu dolu), `tx_drop` (TX kuyruğu dolu), `tx_error` veya `timeout` olarak izlenir. Kayıplar sonuçtan gizlenmez ve "deadline karşılandı" olarak sayılmaz.
 
 ---
 
@@ -135,10 +143,16 @@ Her kabul edilen olay `ok`, `drop`, `tx_error` veya `timeout` olarak izlenir. Ka
 Ayrıntılı adımlar: [docs/setup.md](docs/setup.md)
 
 ### 5.1 Firmware derleme ve yükleme
-_TBD_
+1. STM32CubeIDE'de *File → Import → Existing Projects into Workspace* ile `hafta-01/firmware` klasörünü içe aktar ("Copy projects into workspace" işaretsiz). Workspace klasörü repo dışında olmalı.
+2. *Project → Build* (Debug).
+3. *Run → Debug As → STM32 C/C++ Application* ile NUCLEO-L476RG'ye yükle.
 
 ### 5.2 PC arayüzünü başlatma
-_TBD_
+```bash
+python -m pip install -r hafta-01/interface/requirements.txt
+python hafta-01/interface/app.py
+```
+Ayrıntılar: [docs/setup.md](docs/setup.md#5-pc-arayüzünü-çalıştırma)
 
 ---
 
@@ -149,14 +163,19 @@ _TBD_
 | Zaman damgası timer'ı | TIM2 (32-bit), APB1 timer saati 80 MHz, PSC = 79 |
 | Timer çözünürlüğü / taşma süresi | 1 µs / ≈ 71,6 dk |
 | HAL timebase kaynağı | TIM6 (SysTick FreeRTOS'a ait) |
-| `configTICK_RATE_HZ` | _TBD_ |
+| `configTICK_RATE_HZ` | 1000 (1 tick = 1 ms) |
 | `configUSE_PREEMPTION` | 1 |
-| `configMAX_PRIORITIES` | _TBD_ |
-| `configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY` | _TBD_ |
-| Buton EXTI NVIC önceliği | _TBD_ |
-| UART NVIC önceliği | _TBD_ |
-| Flash ART (prefetch, I/D cache) | _TBD: açık/kapalı (Cortex-M4'te L1 cache yok)_ |
-| Görev yığın boyutları | _TBD_ |
+| `configMAX_PRIORITIES` | 56 |
+| `configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY` | 5 |
+| Buton EXTI NVIC önceliği | 5 (`EXTI15_10_IRQn`) |
+| UART NVIC önceliği | 6 (`USART2_IRQn`) |
+| TIM6 (HAL timebase) NVIC önceliği | 15 |
+| Timer daemon görevi önceliği | 2 (`configTIMER_TASK_PRIORITY`; software timer kullanılmadığı için sürekli bloklu) |
+| Idle görevi önceliği | 0 |
+| Flash ART (prefetch, I/D cache) | Açık (`PREFETCH_ENABLE`, `INSTRUCTION_CACHE_ENABLE`, `DATA_CACHE_ENABLE` = 1). Cortex-M4'te L1 cache yok, DMA kullanılmıyor |
+| Görev yığın boyutları | TelemetryTask 512, ButtonTask 512, UartTxTask 512 word (1 word = 4 bayt). Kuru denemede high-water mark: 364 / 366 / 306 word boş |
+| Heap | heap_4, `configTOTAL_HEAP_SIZE` = 32768 bayt |
+| Stack overflow kontrolü | `configCHECK_FOR_STACK_OVERFLOW` = 2, `configUSE_MALLOC_FAILED_HOOK` = 1. Hook'larda LD2 sabit yanar |
 
 ---
 

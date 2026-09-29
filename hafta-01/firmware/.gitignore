@@ -4,3 +4,6 @@ Release/
 
 # Eclipse workspace metadata (must live outside the repo)
 .metadata/
+
+# Per-user IDE view state
+.settings/com.st.stm32cube.ide.mcu.sfrview.prefs
