@@ -6,7 +6,7 @@
 
 - Kart, MCU saati, tick hızı, timer ve derleme ayarları: bkz. [README](../README.md#1-donanım-bağlantılar-ve-araç-sürümleri)
 - Ölçülen firmware: `olcum-v2` tag'i (`5baf768`). NUCLEO-L476RG, 80 MHz, FreeRTOS 10.3.1, Debug `-O0`. v2, v1'e TX ve buton kuyruklarının high-water mark sayaçlarını ekler. v1 ölçümleri [measurements/olcum-v1/](../measurements/olcum-v1/) altında arşivlidir ve bu raporda kullanılmamıştır.
-- Teslim commit'i: _TBD_
+- Teslim commit'i: `e8d04e6bbda2068f35801371f82643e78f62df4f`
 - Ölçüm tarihi: 2026-09-29
 - Prosedür: her senaryoda `SCN,Sx` → 5 s ısınma → en az 30 basış (en az 0,5 s aralıklı, düzensiz) → `STOP` → `DUMP`. CSV'ler PC arayüzü tarafından DUMP çıktısından olduğu gibi kaydedildi. Basış aralıkları kartın t₀ damgalarından kontrol edildi: en kısa aralık 0,501 s (S1), 0,5 s'nin altında kalan basış yok. S2'nin ilk ölçümünde 4 basış 0,45 s'ye indiği için senaryo tekrarlandı.
 - Ek CPU talebi (şartnamedeki yaklaşık hesap, U ≈ C × f): S4'te 100 Hz × 2 ms ≈ %20, S5'te 100 Hz × 5 ms ≈ %50. Bu hesaplanmış bir taleptir, ölçülmüş toplam CPU kullanımı değildir. Ölçülen iş süreleri S4'te 2002–2063 µs, S5'te 5002–5088 µs.
