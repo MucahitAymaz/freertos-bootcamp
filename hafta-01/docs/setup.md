@@ -59,9 +59,16 @@ Bu belge, sistemi sıfırdan kurup ölçümü tekrar üretebilmek için gereken 
 
 ## 5. PC Arayüzünü Çalıştırma
 
-1. _TBD: bağımlılıkları kurma_
-2. _TBD: arayüzü başlatma_
-3. _TBD: port seçimi ve bağlanma_
+1. Bağımlılıkları kur (Python 3.12 ile denendi):
+   ```bash
+   python -m pip install -r hafta-01/interface/requirements.txt
+   ```
+2. Arayüzü başlat:
+   ```bash
+   python hafta-01/interface/app.py
+   ```
+3. Port listesinden **STLink Virtual COM Port**'u seç ve **Bağlan**'a bas. Port aynı anda tek programa açılabildiği için Tera Term kapalı olmalı.
+4. Bir senaryo düğmesine (S0–S5) bas. Isınma sayacı 5 s'yi doldurunca butona bas. **STOP + DUMP** ile kayıtlar `measurements/Sx.csv` ve `measurements/Sx_counters.csv` dosyalarına olduğu gibi yazılır.
 
 ## 6. Ölçüm Alma
 
