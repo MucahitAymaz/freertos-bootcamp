@@ -1,0 +1,3 @@
+# Raw session logs are for debugging, not measurement results
+logs/
+__pycache__/
