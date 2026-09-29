@@ -157,9 +157,20 @@ void TelemetryTask(void *argument)
         if (msg_format64(m.data, "TEL,%" PRIu32 ",S%u,%" PRIu32,
                          seq, (unsigned)scn, (uint32_t)xTaskGetTickCount()))
         {
+            /* Queue level only rises right after a send, so sampling here catches the peak.
+               A failed send means the queue was full at that moment. */
+            uint32_t level = TX_QUEUE_LEN;
             if (xQueueSend(g_tx_queue, &m, 0) != pdPASS)
             {
                 g_cnt.tx_drop_tel++;
+            }
+            else
+            {
+                level = (uint32_t)uxQueueMessagesWaiting(g_tx_queue);
+            }
+            if (level > g_cnt.txq_hwm_tel)
+            {
+                g_cnt.txq_hwm_tel = level;
             }
         }
         seq++;

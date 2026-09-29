@@ -146,7 +146,9 @@ static void dump_log(void)
               ",rx_error=%" PRIu32
               ",tel_period_min_us=%s,tel_period_max_us=%s,work_min_us=%s,work_max_us=%s"
               ",cal_us=%" PRIu32 ",cal_iters=%u"
-              ",hwm_tel_words=%u,hwm_btn_words=%u,hwm_uart_words=%u\n",
+              ",hwm_tel_words=%u,hwm_btn_words=%u,hwm_uart_words=%u"
+              ",txq_hwm=%" PRIu32 ",txq_hwm_tel=%" PRIu32 ",txq_hwm_btn=%" PRIu32
+              ",btnq_hwm=%" PRIu32 "\n",
               g_cnt.bounce_rejected, g_cnt.btn_drop, g_cnt.tx_drop_tel,
               g_cnt.tx_drop_btn, g_cnt.tx_error, g_cnt.timeout,
               g_cnt.log_overflow, g_cnt.fmt_error, g_cnt.cmd_drop, g_cnt.rx_error,
@@ -154,7 +156,9 @@ static void dump_log(void)
               telemetry_cal_us(), (unsigned)CAL_ITERS,
               (unsigned)uxTaskGetStackHighWaterMark(g_task_telemetry),
               (unsigned)uxTaskGetStackHighWaterMark(g_task_button),
-              (unsigned)uxTaskGetStackHighWaterMark(g_task_uart));
+              (unsigned)uxTaskGetStackHighWaterMark(g_task_uart),
+              (g_cnt.txq_hwm_tel > g_cnt.txq_hwm_btn) ? g_cnt.txq_hwm_tel : g_cnt.txq_hwm_btn,
+              g_cnt.txq_hwm_tel, g_cnt.txq_hwm_btn, g_cnt.btnq_hwm);
     send_line("END\n");
 }
 

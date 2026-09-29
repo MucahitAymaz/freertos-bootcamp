@@ -186,7 +186,8 @@ Ayrıntılar: [docs/setup.md](docs/setup.md#5-pc-arayüzünü-çalıştırma)
 | Ham ölçümler (senaryo başına) | [measurements/S0.csv … S5.csv](measurements/) |
 | Özet tablo | [measurements/summary.csv](measurements/summary.csv) |
 | Grafikler | [analysis/plots/](analysis/plots/) |
-| Grafik üretme kodu | _TBD_ |
+| Grafik üretme kodu | [analysis/analyze.py](analysis/analyze.py) (`python hafta-01/analysis/analyze.py`) |
+| Betik çıktısı tablolar | [analysis/tables.md](analysis/tables.md) |
 | Analiz raporu | [analysis/report.md](analysis/report.md) |
 
 Ham CSV biçimi (her satır bir buton olayı):
